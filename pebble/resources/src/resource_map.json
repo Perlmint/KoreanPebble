@@ -1,0 +1,11 @@
+{
+    "media": [
+        {
+            "defName": "KOREAN_FONT_18",
+            "type": "png",
+            "file": "images/font.png"
+        }
+    ],
+    "friendlyVersion": "VERSION",
+    "versionDefName": "APP_RESOURCES"
+}
