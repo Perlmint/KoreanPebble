@@ -6,4 +6,5 @@ KoreanPebble
 Reference
 ---------
 Pebble notifier : https://github.com/dattas/pebble-notifier
+
 Pebble Korean TextLayer Prototype : https://github.com/omniavinco/pebbleKoreanTest
