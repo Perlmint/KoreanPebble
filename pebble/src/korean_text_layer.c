@@ -1,45 +1,37 @@
 #include "korean_text_layer.h"
+#include "korean_text_layer_internal.h"
+#include "koreanProcessor.h"
 #include "pebble_app.h"
+#include "pebble_fonts.h"
 
 HeapBitmap font;
 GBitmap fontCursor;
-GPoint *fontCursorOrigin;
 
 void korean_text_layer_update(struct Layer *layer, GContext *ctx);
 
-typedef enum {
-    first = 1, middle_u = 2, middle_rl = 3, middle_rs = 4, last = 5, none = 0
-  } glyphType_t;
+char_family_t getCharacterFamily(uint32_t c) {
+  if (c >= ' ' && c <= '~') {
+    return ascii;
+  }
+  // 가 ~ 힣
+  if (c >= 44032 && c <= 55203) {
+    return korean;
+  }
+  // ㄱ ~ ㅎ ㅏ ~ ㅣ
+  if (c >= 12593 && c <= 12643) {
+    return korean;
+  }
+  return unknown;
+}
 
-uint8_t getGlyphWidth(uint8_t c, glyphType_t *current) {
-  if (c <= '~') {
-    *current = none;
-    return 9;
-  }
-  c -= '~';
-  switch(c) {
-    case 'y': case 'u': case 'i': case 'o':
-    case 'p': case '0': case 'h': case 'j':
-    case 'k': case 'l': case ';': case '\'':
-    case 'n': case 'm': 
-      *current = first;
-      return 9;
-    case '4': case '5': case '9': case 'g':
-    case 'v': case 'b': case '/': case '8':
-      *current = middle_u;
-      return 2;
-    case '7': case 'e': case 'r': case 'c':
-    case 'G': 
-      *current = middle_rl;
-      return 6;
-    case '6': case 't': case 'd': case 'f':
-      *current = middle_rs;
-      return 4;
+uint8_t getCharacterWidth(uint32_t c) {
+  char_family_t family = getCharacterFamily(c);
+  switch (family) {
+    case korean:
+      return getKoreanCharacterWidth(c);
     default:
-      *current = last;
-      return 0;
+      return 9;
   }
-  return 9;
 }
 
 void korean_text_layer_system_init() {
@@ -53,86 +45,116 @@ void korean_text_layer_system_deinit() {
 
 void korean_text_layer_init(KoreanTextLayer *layer, const GRect rect) {
   text_layer_init(&layer->layer, rect);
-  fontCursorOrigin = &fontCursor.bounds.origin;
-  layer_set_update_proc(&layer->layer, &korean_text_layer_update);
+  layer_set_update_proc((Layer *)&layer->layer, &korean_text_layer_update);
+  ((KoreanTextLayer *)layer)->layer.text_alignment = GTextAlignmentLeft;
 }
 
 void korean_text_layer_set_text(KoreanTextLayer *layer, const char *buf) {
   text_layer_set_text(&layer->layer, buf);
-  layer_mark_dirty(&layer->layer);
+  layer_mark_dirty((Layer *)&layer->layer);
 }
 
-void korean_text_layer_render(struct Layer *layer, GContext *ctx, const uint8_t *str, uint8_t len, GPoint startPoint) {
-  glyphType_t current = none;
-  uint8_t code;
-  int16_t xPos = startPoint.x, yPos = startPoint.y;
-  for(uint16_t strPos = 0; strPos < len; ++strPos) {
-    code = str[strPos];
-    if (code <= '~') {
-      code -= ' ';
-      fontCursorOrigin->x = (code & 0x0F) * 9;
-      fontCursorOrigin->y = (code >> 4) * 18 + 108;
-      graphics_draw_bitmap_in_rect(ctx, &fontCursor, GRect(xPos, yPos, 9, 18));
-      xPos += 9;
-      continue;
+void renderAscii(GContext *ctx, GBitmap *fontCursor, GPoint *point, const uint32_t ch) {
+  uint32_t code = ch - ' ';
+  fontCursor->bounds.size.w = 9;
+  fontCursor->bounds.origin.x = (code & 0x0F) * 9;
+  fontCursor->bounds.origin.y = (code >> 4) * 18;
+  graphics_draw_bitmap_in_rect(ctx, fontCursor, GRect(point->x, point->y, 9, 18));
+  point->x += 9;
+}
+
+void renderUnknown(GContext *ctx, GBitmap *fontCursor, GPoint *point, const uint32_t ch) {
+  fontCursor->bounds.size.w = 9;
+  fontCursor->bounds.origin.x = 15 * 9;
+  fontCursor->bounds.origin.y = 5 * 18;
+  graphics_draw_bitmap_in_rect(ctx, fontCursor, GRect(point->x, point->y, 9, 18));
+  point->x += 9;
+}
+
+void korean_text_layer_render_line(GContext *ctx, GPoint *point, const char *bufStart, const char *bufEnd) {
+  for(uint32_t ch; bufStart != bufEnd;) {
+    if (*bufStart == '\n') { // newline character should be at end of string
+      break;
     }
-    uint8_t size = getGlyphWidth(code, &current);
-    if (current == last) {
-      xPos -= 9;
-    } else if (current == middle_u) {
-      xPos -= 7;
+    bufStart = extractOneCharacterFromUTF8Str(bufStart, &ch);
+    switch(getCharacterFamily(ch)) {
+      case korean:
+        renderKoreanCharacter(ctx, &fontCursor, point, ch);
+        break;
+      case ascii:
+        renderAscii(ctx, &fontCursor, point, ch);
+        break;
+      default:
+        renderUnknown(ctx, &fontCursor, point, 0);
+        break;
     }
-    code -= '~' + '!';
-    fontCursorOrigin->x = (code & 0x0F) * 9;
-    fontCursorOrigin->y = (code >> 4) * 18;
-    graphics_draw_bitmap_in_rect(ctx, &fontCursor, GRect(xPos, yPos, 9, 18));
-    if (current == middle_u) {
-      xPos += 7;
-    } else if (current == last) {
-      xPos += 9;
-    } else {
-      xPos += size;
-    }
-  }  
+  }
+  point->y += 18;
+}
+
+uint16_t calcRenderStartPosition(const GTextAlignment alignment, const uint16_t width, const uint16_t lineWidth) {
+  switch (alignment) {
+    case GTextAlignmentLeft:
+      return 0;
+      break;
+    case GTextAlignmentCenter:
+      return (width - lineWidth) / 2;
+      break;
+    case GTextAlignmentRight:
+      return width - lineWidth;
+      break;
+  }
+  return 0;
 }
 
 void korean_text_layer_update(struct Layer *layer, GContext *ctx) {
-  int16_t xPos = 0, yPos = 0,
+  uint16_t lineWidth = 0,
     width = layer_get_frame(layer).size.w,
-    height = layer_get_frame(layer).size.h - 18, tmpPos;
-  uint8_t tmp = 0;
-  uint16_t strPos = 0, startPos = 0, searchPos;
+    height = layer_get_frame(layer).size.h;
+  GPoint renderPoint = {
+    .x = 0,
+    .y = 0
+    };
+
+  // Setup layer for drawing
   graphics_context_set_compositing_mode(ctx, GCompOpAssign);
   graphics_context_set_fill_color(ctx, GColorClear);
   graphics_fill_rect(ctx, layer_get_frame(layer), 0, GCornerNone);
-  glyphType_t cur;
   graphics_context_set_compositing_mode(ctx, GCompOpAnd);
-  const char *textBuf = text_layer_get_text((KoreanTextLayer *)layer)->layer);
-  for(; yPos < height; ++strPos) {
-    bool render = false;
-    if (strPos > 256 || textBuf[strPos] == 0) {
+
+  const char *bufStart = text_layer_get_text(&(((KoreanTextLayer *)layer)->layer)),
+             *bufEnd = 0;
+  bufEnd = bufStart;
+
+  for(uint32_t ch; renderPoint.y < height;) {
+    if (*bufEnd == 0) { // string is end... render remain string and quit
+      // Set Line render start Position
+      renderPoint.x = calcRenderStartPosition(((KoreanTextLayer *)layer)->layer.text_alignment, width, lineWidth);
+      korean_text_layer_render_line(ctx, &renderPoint, bufStart, bufEnd);
       break;
-    } else if (textBuf[strPos] == '\n') {
-      render = true;
+    }
+
+    const char *newEnd = extractOneCharacterFromUTF8Str(bufEnd, &ch);
+
+    if (ch == '\n') { // new line
+      bufEnd = newEnd;
     } else {
-      tmp += getGlyphWidth(textBuf[strPos], &cur);
-    }
-    if (xPos + tmp > width) {
-      render = true;
-    }
-    if (render) {
-      korean_text_layer_render(layer, ctx, textBuf + startPos, strPos - startPos, GPoint(xPos, yPos));
-      startPos = strPos;
-      if (textBuf[strPos] == '\n') {
-        ++startPos;
+      uint8_t chWidth = getCharacterWidth(ch);
+
+      if (chWidth + lineWidth < width) {
+        bufEnd = newEnd;
+        lineWidth += chWidth;
+        continue;
       }
-      tmp = 0;
-      xPos = tmp;
-      yPos += 18;
-      continue;
     }
+
+    // Set Line render start Position
+    renderPoint.x = calcRenderStartPosition(((KoreanTextLayer *)layer)->layer.text_alignment, width, lineWidth);
+    korean_text_layer_render_line(ctx, &renderPoint, bufStart, bufEnd);
+    
+    lineWidth = 0;
+    bufStart = bufEnd;
   }
-  korean_text_layer_render(layer, ctx, textBuf + startPos, strPos - startPos, GPoint(xPos, yPos));
 }
 
 /*
@@ -144,22 +166,24 @@ void korean_text_layer_update(struct Layer *layer, GContext *ctx) {
 31	U+4000000	U+7FFFFFFF	6	1111110x	10xxxxxx	10xxxxxx	10xxxxxx	10xxxxxx	10xxxxxx
 */
 
-uint32_t extractOneCharacterFromUTF8Str(const char **str) {
-  uint32_t ch = 0;
+const char *extractOneCharacterFromUTF8Str(const char *str, uint32_t *ret) {
   int8_t count = 0;
+  *ret = 0;
   for(; count < 8; ++count) {
     uint8_t tmp = 0x80 >> count;
-    if ((**str & tmp) != tmp) {
+    if ((*str & tmp) != tmp) {
       break;
     }
   }
-  if (count == 1) {
-    return 0;
+  if (count == 0) {
+    *ret = *str;
+    return ++str;
   }
-  ch = **str & (0x40 >> count);
-  for(++*str;count > 0; --count, ++*str) {
-    ch <<= 6;
-    ch |= **str & 0x3F;    
+  count--;
+  *ret = *str & (0x3F >> (count));
+  for(++str;count > 0; --count, ++str) {
+    *ret <<= 6;
+    *ret |= *str & 0x3F;
   }
-  return ch;
+  return str;
 }

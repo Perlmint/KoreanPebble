@@ -44,9 +44,9 @@ void in_received(DictionaryIterator *received, void *context) {
     break;
   case 1: // notification
     value = dict_find(received, 2);
-    korean_text_layer_set_text(&titleLayer, value->value->data, value->length);
+    korean_text_layer_set_text(&titleLayer, value->value->cstring);
     value = dict_find(received, 3);
-    korean_text_layer_set_text(&bodyLayer, value->value->data, value->length);
+    korean_text_layer_set_text(&bodyLayer, value->value->cstring);
     snprintf(buf, 18, "Received%d", *value->value->data);
     text_layer_set_text(&statusLayer, buf);
     break;
@@ -68,29 +68,29 @@ void in_received(DictionaryIterator *received, void *context) {
 
 void printReason(AppMessageResult reason) {
   if (reason == APP_MSG_CALLBACK_NOT_REGISTERED) {
-    text_layer_set_text(&statusLayer, "Hello not registered!");
+    text_layer_set_text(&statusLayer, "not registered!");
   } else if (reason == APP_MSG_CALLBACK_ALREADY_REGISTERED) {
-    text_layer_set_text(&statusLayer, "Hello already registered!");
+    text_layer_set_text(&statusLayer, "already registered!");
   } else if (reason == APP_MSG_ALREADY_RELEASED) {
-    text_layer_set_text(&statusLayer, "Hello already released!");
+    text_layer_set_text(&statusLayer, "already released!");
   }else if (reason == APP_MSG_BUFFER_OVERFLOW) {
-    text_layer_set_text(&statusLayer, "Hello buff over!");
+    text_layer_set_text(&statusLayer, "buff over!");
   }else if (reason == APP_MSG_BUSY) {
-    text_layer_set_text(&statusLayer, "Hello busy!");
+    text_layer_set_text(&statusLayer, "busy!");
   }else if (reason == APP_MSG_INVALID_ARGS) {
-    text_layer_set_text(&statusLayer, "Hello invalid args!");
+    text_layer_set_text(&statusLayer, "invalid args!");
   }else if (reason == APP_MSG_APP_NOT_RUNNING) {
-    text_layer_set_text(&statusLayer, "Hello not running!");
+    text_layer_set_text(&statusLayer, "not running!");
   }else if (reason == APP_MSG_OK) {
-    text_layer_set_text(&statusLayer, "Hello ok!");
+    text_layer_set_text(&statusLayer, "ok!");
   }else if (reason == APP_MSG_NOT_CONNECTED) {
-    text_layer_set_text(&statusLayer, "Hello not connected!");
+    text_layer_set_text(&statusLayer, "not connected!");
   }else if (reason == APP_MSG_SEND_REJECTED) {
-    text_layer_set_text(&statusLayer, "Hello send rejected!");
+    text_layer_set_text(&statusLayer, "send rejected!");
   }else if (reason == APP_MSG_SEND_TIMEOUT) {
-    text_layer_set_text(&statusLayer, "Hello send timeout!");
+    text_layer_set_text(&statusLayer, "send timeout!");
   }else {
-    text_layer_set_text(&statusLayer, "Hello Dropped!");
+    text_layer_set_text(&statusLayer, "Dropped!");
   }
 }
 
@@ -121,9 +121,9 @@ void handle_init(AppContextRef ctx) {
   korean_text_layer_system_init();
 
   korean_text_layer_init(&titleLayer, GRect(0, 0, 144, 20));
-  layer_add_child(&window.layer, &titleLayer.layer);
+  layer_add_child(&window.layer, (Layer *)&titleLayer.layer);
   korean_text_layer_init(&bodyLayer, GRect(0, 20, 144, 100));
-  layer_add_child(&window.layer, &bodyLayer.layer);
+  layer_add_child(&window.layer, (Layer *)&bodyLayer.layer);
 
   text_layer_init(&statusLayer, GRect(0, 120, 144, 18));
   text_layer_set_font(&statusLayer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
