@@ -5,9 +5,9 @@
 
 #define MY_UUID { 0x98, 0x24, 0x92, 0xE8, 0x50, 0xDB, 0x4A, 0xE3, 0xA6, 0x9A, 0x1B, 0x43, 0xE0, 0x12, 0xC9, 0x3F }
 PBL_APP_INFO(MY_UUID,
-             "Template App", "Your Company",
+             "Korean Pebble", "Your Company",
              1, 0, /* App version */
-             DEFAULT_MENU_ICON,
+             RESOURCE_ID_ICON,
              APP_INFO_STANDARD_APP);
 
 Window window;
