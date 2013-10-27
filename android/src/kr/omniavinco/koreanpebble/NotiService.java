@@ -36,6 +36,8 @@ public class NotiService extends AccessibilityService {
 
 	@Override
 	protected void onServiceConnected() {
+		
+		Log.d("NotiService", "Connected.");
 
 		serviceInfo.eventTypes = AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED;
 
@@ -44,11 +46,7 @@ public class NotiService extends AccessibilityService {
 		} else {
 			serviceInfo.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC;
 		}    
-
-		Log.d("NotiService", "Connected.");
-
 		this.setServiceInfo(serviceInfo);
-
 
 		sharedPreferences = getSharedPreferences(Constants.LOG_TAG, MODE_MULTI_PROCESS | MODE_PRIVATE);
 		Intent serviceIntent = new Intent(Constants.INTENT_SEND_PEBBLE_NOTIFICATION);
@@ -102,21 +100,6 @@ public class NotiService extends AccessibilityService {
 			LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 			ViewGroup localView = (ViewGroup) inflater.inflate(notification.contentView.getLayoutId(), null);
 			notification.contentView.reapply(getApplicationContext(), localView);
-
-			/*
-			if (notification.vibrate == null) {
-				Log.d("NotiService", "No vibration");
-			}
-			Log.d("NotiService", "Vibration : " + notification.vibrate.toString());
-			 */
-			
-			/*
-			//event time is elapsed from booting.
-			Time t = new Time();
-			t.set(java.lang.System.currentTimeMillis() + event.getEventTime() - android.os.SystemClock.elapsedRealtime());
-
-			Log.d("NotiService", t.format3339(false));
-			*/
 
 			// Find all texts of the notification
 			ArrayList<TextView> views = new ArrayList<TextView>();
