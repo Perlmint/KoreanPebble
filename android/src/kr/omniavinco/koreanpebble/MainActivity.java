@@ -100,7 +100,8 @@ public class MainActivity extends Activity {
 		updateAppTable();
 		AccessibilityManager accessibilityManager = (AccessibilityManager) getSystemService(Service.ACCESSIBILITY_SERVICE);
 		// feedbackSpoken|feedbackHaptic|feedbackVisual|feedbackGeneric
-        List<AccessibilityServiceInfo> installedServices = accessibilityManager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC);
+		List<AccessibilityServiceInfo> installedServices = accessibilityManager
+				.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC);
         
         boolean found = false;
         for (AccessibilityServiceInfo serviceInfo : installedServices) {

@@ -22,7 +22,7 @@ import android.util.Log;
 
 class Message extends Object {
 	static long idCounter = (long) 0;
-	public final byte title[], msg[];
+	public final String title, msg;
 	public final boolean vibe;
 	public final long id;
 	private final byte[] ListToArray(List<Byte> tmpBuf) {
@@ -44,16 +44,23 @@ class Message extends Object {
 	}
 	
 	public Message(String title_, String message_, Boolean vibe_) {
+		/*
 		List<Byte> tmpBuf = PebbleUtil.unicode2han_str(title_);
 		title = ListToArray(tmpBuf);
 		tmpBuf = PebbleUtil.unicode2han_str(message_);
 		msg = ListToArray(tmpBuf);
+		*/
+		title = title_;
+		msg = message_;
+		
 		vibe = vibe_;
+		
 		if (idCounter < 5000) {
 			id = ++idCounter;
 		} else {
 			id = idCounter = (long) 0;
 		}
+		
 	}
 }
 
@@ -101,11 +108,11 @@ public class PebbleService extends Service {
 		PebbleDictionary sendData = new PebbleDictionary();
 		sendData.addUint8(0, PROTOCOL_TYPE_NOTIFICATION);
 		sendData.addUint8(1, (byte) (msg.vibe?1:0));
-		sendData.addBytes(2, msg.title);
-		sendData.addBytes(3, msg.msg);
+		sendData.addString(2, msg.title);
+		sendData.addString(3, msg.msg);
 		sendData.addUint16(4, (short) messageStack.size());
 		sendData.addUint16(5, (short) messageStack.indexOf(msg));
-		Log.e("notification", String.format("%d size", (msg.title.length + msg.msg.length + 6)));
+		Log.e("notification", String.format("%d size", (msg.title.length() + msg.msg.length() + 6)));
 		PebbleKit.sendDataToPebbleWithTransactionId(PebbleService.this, pebbleAppId, sendData, transactionId);
 		if (transactionId < Integer.MAX_VALUE) {
 			transactionId++;
