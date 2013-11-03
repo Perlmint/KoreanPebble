@@ -74,7 +74,7 @@ public class NotiService extends AccessibilityService {
 
 		String eventPackageName = event.getPackageName().toString();
 
-		boolean found = sharedPreferences.getBoolean(eventPackageName, false);        
+		boolean found = sharedPreferences.getBoolean(eventPackageName, false);      
 
 		if (!found) {
 			Log.e("service_ignored", eventPackageName);
