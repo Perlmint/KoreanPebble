@@ -74,7 +74,7 @@ public class NotiService extends AccessibilityService {
 
 		String eventPackageName = event.getPackageName().toString();
 
-		boolean found = sharedPreferences.getBoolean(eventPackageName, false);        
+		boolean found = sharedPreferences.getBoolean(eventPackageName, false);      
 
 		if (!found) {
 			Log.e("service_ignored", eventPackageName);
@@ -91,9 +91,11 @@ public class NotiService extends AccessibilityService {
 				Log.d("NotiService", "noti is null");
 				return;
 			}
+			Log.d("NotiService", "noti is not null");
 			
-			// ignore non-vibration notification
-			if (notification.vibrate == null) {
+			// ignore non-vibration notification (kakao only)
+			if (eventPackageName.equals("com.kakao.talk") && notification.vibrate == null) {
+				Log.d("NotiService", "No vibrate");
 				return;
 			}
 
