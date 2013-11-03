@@ -7,7 +7,7 @@
     android:versionName="1.0" >
 
     <uses-sdk
-        android:minSdkVersion="9"
+        android:minSdkVersion="14"
         android:targetSdkVersion="18" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_MMS" />
@@ -39,18 +39,17 @@
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
         </service>
-        <service
-             android:name=".PebbleService">
+        <service android:name=".PebbleService">
              <intent-filter>
                  <action android:name="kr.omniavinco.koreanpebble.SEND_NOTIFICATION"/>
-                 <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
              </intent-filter>
         </service>
-        <receiver 
-             android:name=".PebbleReceiver"
-             >
+        <receiver android:name=".PebbleReceiver"
+            	  android:permission="android.permission.READ_SMS">
              <intent-filter>
                  <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                 <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+                 <action android:name="android.provider.Telephony.MMS_RECEIVED"/>
              </intent-filter>
         </receiver>
     </application>
