@@ -6,24 +6,25 @@ import java.util.Map;
 
 import org.json.JSONObject;
 
-import android.net.Uri;
-import android.os.Bundle;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Service;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.text.InputType;
+import android.net.Uri;
+import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
@@ -31,79 +32,19 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TableLayout;
-import android.widget.TextView;
 import android.widget.TableLayout.LayoutParams;
 import android.widget.TableRow;
+import android.widget.TextView;
 
 public class MainActivity extends Activity {
-	SharedPreferences preferences;
-	TableLayout table;
-	
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// TODO Auto-generated method stub
-		switch(item.getItemId()) {
-		case R.id.action_send_msg:
-			showSendMessagePopup();
-			break;
-		case R.id.action_download_pbw:
-			Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Constants.PEBBLE_APP_DOWNLOAD_LINK));
-			startActivity(browserIntent);
-			break;
-		}
-		
-		return super.onOptionsItemSelected(item);
-	}
-	
-	private void showSendMessagePopup() {
-		runOnUiThread(new Runnable() {
-			
-			@Override
-			public void run() {
-				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-				builder.setTitle("Title");
-
-				// Set up the input
-				final EditText input = new EditText(getBaseContext());
-				// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
-				input.setInputType(InputType.TYPE_CLASS_TEXT);
-				input.setTextColor(Color.BLACK);
-				input.setTextSize(18);
-				builder.setView(input);
-
-				// Set up the buttons
-				builder.setPositiveButton("OK", new DialogInterface.OnClickListener() { 
-				    @Override
-				    public void onClick(DialogInterface dialog, int which) {
-						final Map<String, Object> data = new HashMap<String, Object>();
-				        data.put("title", "사용자 메시지");
-				        data.put("body", input.getText().toString());
-				        final JSONObject jsonData = new JSONObject(data);
-				        final String notificationData = jsonData.toString();
-
-				        // Create the intent to house the Pebble notification
-				        final Intent intent = new Intent(Constants.INTENT_SEND_PEBBLE_NOTIFICATION);
-				        intent.putExtra("messageType", Constants.PEBBLE_MESSAGE_TYPE_ALERT);
-				        intent.putExtra("sender", "custom message");
-				        intent.putExtra("notificationData", notificationData);
-
-				        sendBroadcast(intent);
-				    }
-				});
-				builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-				    @Override
-				    public void onClick(DialogInterface dialog, int which) {
-				        dialog.cancel();
-				    }
-				});
-				builder.show();
-			}
-		});
-	}
+	private SharedPreferences preferences;
+	private TableLayout table;
+	private AlertDialog sendMessageDialog;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		initSendMessagePopup();
 		preferences = getSharedPreferences(Constants.LOG_TAG, MODE_MULTI_PROCESS | MODE_PRIVATE);
 		setContentView(R.layout.activity_main);
 		table = (TableLayout) findViewById(R.id.appList);
@@ -142,8 +83,73 @@ public class MainActivity extends Activity {
         	builder.show();
         }
 	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// TODO Auto-generated method stub
+		switch(item.getItemId()) {
+		case R.id.action_send_msg:
+			sendMessageDialog.show();
+			break;
+		case R.id.action_download_pbw:
+			Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Constants.PEBBLE_APP_DOWNLOAD_LINK));
+			startActivity(browserIntent);
+			break;
+		}
+		
+		return super.onOptionsItemSelected(item);
+	}
+	
+	private void initSendMessagePopup() {
+		
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+		alertDialogBuilder.setTitle("Send message to pebble : ");
+		
+		LayoutInflater inflater = (LayoutInflater)getSystemService(LAYOUT_INFLATER_SERVICE);
+		final View layout = inflater.inflate(R.layout.send_message_dialog, null);
+		final EditText msgBox = (EditText)layout.findViewById(R.id.send_message_dialog_msg);
+		
+		alertDialogBuilder.setView(layout);
+		alertDialogBuilder.setPositiveButton("Send", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				
+				final Map<String, Object> data = new HashMap<String, Object>();
+		        data.put("title", "사용자 메시지");
+		        data.put("body", msgBox.getText().toString());
+		        final JSONObject jsonData = new JSONObject(data);
+		        final String notificationData = jsonData.toString();
 
-	protected void updateAppTable() {
+		        // Create the intent to house the Pebble notification
+		        final Intent intent = new Intent(Constants.INTENT_SEND_PEBBLE_NOTIFICATION);
+		        intent.putExtra("messageType", Constants.PEBBLE_MESSAGE_TYPE_ALERT);
+		        intent.putExtra("sender", "custom message");
+		        intent.putExtra("notificationData", notificationData);
+
+		        sendBroadcast(intent);
+		        
+		        msgBox.setText("");
+			}
+		});
+		alertDialogBuilder.setNegativeButton("Cancel", new OnClickListener() {
+			
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				dialog.cancel();
+			}
+		});
+		
+		sendMessageDialog = alertDialogBuilder.create();
+	}
+	
+	private void updateAppTable() {
 		table.removeAllViewsInLayout();
 		int dip = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
 				(float) 1, getResources().getDisplayMetrics());
@@ -188,13 +194,6 @@ public class MainActivity extends Activity {
 			table.addView(row, new TableLayout.LayoutParams(
 					LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 		}
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
 	}
 
 }

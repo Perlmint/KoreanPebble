@@ -190,11 +190,14 @@ public class PebbleService extends Service {
 			@Override
 			public void receiveData(Context context, int transactionId,
 					PebbleDictionary data) {
+				// data is invalid.
 				if (!data.contains(0)) {
 					Log.e("service", "no message");
 					PebbleKit.sendNackToPebble(context, transactionId);
 					return;
 				}
+				
+				// valid
 				switch (data.getUnsignedInteger(0).intValue()) {
 				case 0: // pebble app init, get latest message
 				{
