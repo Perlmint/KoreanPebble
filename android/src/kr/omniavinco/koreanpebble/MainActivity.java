@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.json.JSONObject;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Activity;
@@ -41,54 +42,63 @@ public class MainActivity extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// TODO Auto-generated method stub
-		if (item.getItemId() == R.id.action_send_msg) {
-			
-			runOnUiThread(new Runnable() {
-				
-				@Override
-				public void run() {
-					AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-					builder.setTitle("Title");
-
-					// Set up the input
-					final EditText input = new EditText(getBaseContext());
-					// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
-					input.setInputType(InputType.TYPE_CLASS_TEXT);
-					input.setTextColor(Color.BLACK);
-					input.setTextSize(18);
-					builder.setView(input);
-
-					// Set up the buttons
-					builder.setPositiveButton("OK", new DialogInterface.OnClickListener() { 
-					    @Override
-					    public void onClick(DialogInterface dialog, int which) {
-							final Map<String, Object> data = new HashMap<String, Object>();
-					        data.put("title", "사용자 메시지");
-					        data.put("body", input.getText().toString());
-					        final JSONObject jsonData = new JSONObject(data);
-					        final String notificationData = jsonData.toString();
-
-					        // Create the intent to house the Pebble notification
-					        final Intent intent = new Intent(Constants.INTENT_SEND_PEBBLE_NOTIFICATION);
-					        intent.putExtra("messageType", Constants.PEBBLE_MESSAGE_TYPE_ALERT);
-					        intent.putExtra("sender", "custom message");
-					        intent.putExtra("notificationData", notificationData);
-
-					        sendBroadcast(intent);
-					    }
-					});
-					builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-					    @Override
-					    public void onClick(DialogInterface dialog, int which) {
-					        dialog.cancel();
-					    }
-					});
-					builder.show();
-				}
-			});
-			
+		switch(item.getItemId()) {
+		case R.id.action_send_msg:
+			showSendMessagePopup();
+			break;
+		case R.id.action_download_pbw:
+			Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Constants.PEBBLE_APP_DOWNLOAD_LINK));
+			startActivity(browserIntent);
+			break;
 		}
+		
 		return super.onOptionsItemSelected(item);
+	}
+	
+	private void showSendMessagePopup() {
+		runOnUiThread(new Runnable() {
+			
+			@Override
+			public void run() {
+				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+				builder.setTitle("Title");
+
+				// Set up the input
+				final EditText input = new EditText(getBaseContext());
+				// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+				input.setInputType(InputType.TYPE_CLASS_TEXT);
+				input.setTextColor(Color.BLACK);
+				input.setTextSize(18);
+				builder.setView(input);
+
+				// Set up the buttons
+				builder.setPositiveButton("OK", new DialogInterface.OnClickListener() { 
+				    @Override
+				    public void onClick(DialogInterface dialog, int which) {
+						final Map<String, Object> data = new HashMap<String, Object>();
+				        data.put("title", "사용자 메시지");
+				        data.put("body", input.getText().toString());
+				        final JSONObject jsonData = new JSONObject(data);
+				        final String notificationData = jsonData.toString();
+
+				        // Create the intent to house the Pebble notification
+				        final Intent intent = new Intent(Constants.INTENT_SEND_PEBBLE_NOTIFICATION);
+				        intent.putExtra("messageType", Constants.PEBBLE_MESSAGE_TYPE_ALERT);
+				        intent.putExtra("sender", "custom message");
+				        intent.putExtra("notificationData", notificationData);
+
+				        sendBroadcast(intent);
+				    }
+				});
+				builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+				    @Override
+				    public void onClick(DialogInterface dialog, int which) {
+				        dialog.cancel();
+				    }
+				});
+				builder.show();
+			}
+		});
 	}
 	
 	@Override

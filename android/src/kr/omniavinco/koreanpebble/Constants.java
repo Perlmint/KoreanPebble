@@ -8,6 +8,8 @@ public final class Constants {
     public static final String  LOG_TAG                         = "kr.omniavinco.koreanpebble";
     public static final boolean IS_LOGGABLE                     = BuildConfig.DEBUG;
    // public static final String  DONATION_URL                    = "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3W6PJ6EK6JVJY";
+    
+    public static final String	PEBBLE_APP_DOWNLOAD_LINK		= "http://sourceforge.net/projects/koreanpebble/files/pebble/pebble.pbw/download";
 
     // bundle extras
     public static final String  BUNDLE_EXTRA_INT_VERSION_CODE   = LOG_TAG + ".INT_VERSION_CODE";
