@@ -1,14 +1,14 @@
 {
     "media": [
         {
-            "defName": "ICON",
-            "type": "png",
-            "file": "images/ICON.png"
-        },
-        {
             "defName": "KOREAN_FONT_18",
             "type": "png",
             "file": "images/font.png"
+        },
+        {
+            "defName": "ICON",
+            "type": "png",
+            "file": "images/ICON.png"
         }
     ],
     "friendlyVersion": "VERSION",
